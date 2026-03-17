@@ -1,0 +1,118 @@
+# Charge Point Status Reporter
+
+This ESP32-based project simulates a charge point (EV charger) status reporter. It connects to WiFi, publishes status updates via MQTT, simulates charging parameters, and controls LED indicators based on the charging state.
+
+## Features
+
+- **WiFi Connectivity**: Connects to a specified WiFi network with configurable credentials stored in NVS.
+- **MQTT Communication**: Publishes device status (voltage, current, charge state, uptime) to an MQTT broker.
+- **Charging Simulation**: Simulates voltage and current fluctuations, fault detection, and state transitions (IDLE, CHARGING, FAULT).
+- **LED Status Indicators**: Uses GPIO pins to control LEDs for visual status feedback.
+- **UART Interface**: Allows runtime changing of WiFi credentials via serial input.
+
+## Setup
+
+### Prerequisites
+
+- ESP32 development board
+- ESP-IDF v5.5.3 or later
+- Serial terminal (e.g., PuTTY, screen) for monitoring and input
+
+### Building the Project
+
+1. Clone or navigate to the project directory.
+2. Set the ESP-IDF environment:
+   ```
+   export IDF_PATH=/path/to/esp-idf
+   ```
+3. Configure the project (optional, uses defaults from `sdkconfig`):
+   ```
+   idf.py menuconfig
+   ```
+4. Build the project:
+   ```
+   idf.py build
+   ```
+
+### Flashing and Monitoring
+
+1. Flash the firmware:
+   ```
+   idf.py flash
+   ```
+2. Monitor serial output:
+   ```
+   idf.py monitor
+   ```
+
+## Configuration
+
+### WiFi Credentials
+
+WiFi SSID and password are configurable via:
+
+- **Compile-time defaults**: Set in `sdkconfig` via `idf.py menuconfig` (CONFIG_ESP_WIFI_SSID, CONFIG_ESP_WIFI_PASSWORD).
+- **Runtime update**: After boot, use the serial prompt to change credentials. The device will reconnect automatically.
+- **Persistent storage**: Updated credentials are saved to NVS for use on reboot.
+
+To change credentials at runtime:
+- Connect via serial (115200 baud).
+- Respond 'y' to the prompt.
+- Enter new SSID.
+- Enter new password.
+- The device updates NVS, reconnects, and resumes operation if successful.
+
+### MQTT Setup
+
+MQTT configuration is set via `sdkconfig` (CONFIG_BROKER_URI).
+
+- **Broker URI**: e.g., `mqtt://broker.example.com:1883`
+- **Topics**:
+  - Publish: `chaji/charger/<chtest_001>/status` (JSON payload with device_id, uptime_s, voltage_V, current_A, charge_state)
+  - Subscribe: `chaji/charger/<chtest_001>/cmd` (accepts JSON commands like {"charge_state": "START_CHARGING"})
+
+Commands:
+- `{"charge_state": "START_CHARGING","current_A":1-16}`: Initiates charging simulation.
+- `{"charge_state":"STOP_CHARGING","current_A":0}`: Stops charging.
+
+## Usage
+
+### Charging Simulation
+
+The device simulates charging parameters:
+- **Voltage**: Fluctuates around 230V ±10.5V during charging; fixed at 220V otherwise.
+- **Current**: Set via MQTT commands.
+- **State Logic**:
+  - IDLE: No charging.
+  - CHARGING: Active simulation with uptime tracking.
+  - FAULT: Triggered if voltage <220V or >240V.
+- Simulation updates every 10 seconds.
+
+### LED Status
+
+LEDs indicate state via GPIO pins (12, 13, 14):
+- **IDLE**: GPIO14 blinks at 2Hz.
+- **CHARGING**: GPIO12 blinks at 2Hz.
+- **FAULT**: GPIO13 blinks at 2Hz.
+
+### Monitoring
+
+- Serial logs provide real-time status.
+- MQTT publishes periodic updates.
+
+## Hardware Connections
+
+- GPIO12: Charging LED
+- GPIO13: Fault LED
+- GPIO14: Idle LED
+- UART0: Serial interface for credentials and logs
+
+## Troubleshooting
+
+- If WiFi fails, check credentials and network.
+- MQTT issues: Verify broker URI and connectivity.
+- Serial input timeouts: Ensure prompt responses within 10s.
+
+## License
+
+This project is open-source. Modify and distribute as needed.

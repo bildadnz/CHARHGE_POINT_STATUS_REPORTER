@@ -1,0 +1,4 @@
+[wokwi]
+version = 1
+firmware = 'build\bootloader\bootloader.bin'
+elf = 'build\bootloader\bootloader.elf'
